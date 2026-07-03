@@ -669,8 +669,36 @@ function buildSummary(){
   });
 }
 
+function persistEvaluationSubmission(){
+  const key='teacherEvaluationSubmissions';
+  let existing=[];
+  try{
+    existing=JSON.parse(localStorage.getItem(key)||'[]');
+    if(!Array.isArray(existing)) existing=[];
+  }catch(e){
+    existing=[];
+  }
+  const now=new Date().toISOString();
+  const records=S.teachers.map((t,i)=>({
+    id:'submission-'+Date.now()+'-'+i,
+    submittedAt:now,
+    tier:S.tier,
+    grade:String(S.grade||''),
+    gradeName:S.gradeName,
+    className:S.className,
+    teacherName:t.name,
+    subject:t.subject,
+    answers:t.answers||{},
+    comment:t.comment||''
+  }));
+  localStorage.setItem(key,JSON.stringify(existing.concat(records)));
+}
+
 // ===== FINAL SUBMIT =====
-function finalSubmit(){ go('s-success'); }
+function finalSubmit(){
+  persistEvaluationSubmission();
+  go('s-success');
+}
 </script>
 </body>
 </html>
