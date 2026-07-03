@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教师评价系统调研报告</title>
+<style>
+  :root{
+    --bg:#fafaf7; --card:#ffffff; --ink:#1f2328; --muted:#57606a;
+    --line:#e6e4dd; --accent:#2f6feb; --accent-soft:#eaf0ff;
+    --red:#d64545; --green:#2da44e; --amber:#bf8700;
+    --tag-bg:#f0ede4; --tag-ink:#6b5d2f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Segoe UI",system-ui,sans-serif;
+    line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:48px 28px 80px;}
+  header{margin-bottom:40px; border-bottom:2px solid var(--line); padding-bottom:24px;}
+  h1{font-size:30px; margin:0 0 8px; letter-spacing:.5px;}
+  .subtitle{color:var(--muted); font-size:15px; margin:0;}
+  .meta{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .meta span{font-size:12px; background:var(--tag-bg); color:var(--tag-ink); padding:3px 10px; border-radius:20px;}
+  h2{font-size:23px; margin:48px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line);}
+  h3{font-size:18px; margin:28px 0 10px; color:var(--ink);}
+  h4{font-size:15.5px; margin:20px 0 8px;}
+  p{margin:10px 0;}
+  ul,ol{margin:10px 0; padding-left:24px;}
+  li{margin:5px 0;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:20px 24px; margin:16px 0; box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .lead{font-size:15.5px; color:var(--muted); border-left:3px solid var(--accent); padding-left:14px; margin:20px 0;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:14px; background:var(--card);}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top;}
+  th{background:#f6f4ee; font-weight:600;}
+  tr:nth-child(even) td{background:#fbfaf6;}
+  .pill{display:inline-block; font-size:12px; padding:2px 9px; border-radius:20px; font-weight:500;}
+  .p-red{background:#fde8e8; color:#9b1c1c;}
+  .p-amber{background:#fdf4e3; color:#8a5a00;}
+  .p-green{background:#e6f4ea; color:#1a6b33;}
+  .p-blue{background:var(--accent-soft); color:#1d4ed8;}
+  .note{background:#fffbeb; border:1px solid #f3e3a8; border-radius:8px; padding:12px 16px; margin:14px 0; font-size:14px;}
+  .note b{color:#8a5a00;}
+  .rec{background:#eef5ff; border:1px solid #cfe0ff; border-radius:8px; padding:14px 18px; margin:14px 0;}
+  .rec b{color:#1d4ed8;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:16px 0;}
+  .grid3 .g{border:1px solid var(--line); border-radius:10px; padding:16px; background:var(--card);}
+  .grid3 h4{margin-top:0;}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr;}}
+  .src{font-size:12.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:12px; margin-top:30px;}
+  .src li{margin:3px 0;}
+  code{background:#f0ede4; padding:1px 6px; border-radius:4px; font-size:13px; font-family:"SFMono-Regular",Consolas,monospace;}
+  strong{color:var(--ink);}
+  .toc{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 24px; margin:24px 0;}
+  .toc ol{margin:6px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>教师评价系统调研报告</h1>
+  <p class="subtitle">评价维度框架 · 分学龄段指标设计 · 打分制与选项制对比</p>
+  <div class="meta">
+    <span>面向 K1–K9 义务教育阶段</span>
+    <span>基于发展心理学与教育测量学</span>
+    <span>含分学龄段实施建议</span>
+  </div>
+</header>
+
+<div class="toc">
+  <strong>报告目录</strong>
+  <ol>
+    <li>教师评价的通用维度框架</li>
+    <li>不同学龄段学生的认知特点与评价能力</li>
+    <li>分学龄段评价指标设计建议</li>
+    <li>打分制 vs 选项制：对比与选型建议</li>
+    <li>综合结论与系统设计要点</li>
+  </ol>
+</div>
+
+<div class="lead">
+本报告围绕三个核心问题展开：①教师评价一般包含哪些维度；②低/中/高三个学龄段学生认知特点有何差异、如何据此设计评价维度；③评价功能应采用数值打分还是等级选项。结论均有发展心理学与教育测量学文献支撑。
+</div>
+
+<!-- ============ 第一部分 ============ -->
+<h2>一、教师评价的通用维度框架</h2>
+
+<p>综合国内师德评价体系研究、Klieme 等(2009)教学质量三维度框架、以及一线学生评教问卷实践，教师评价可归纳为 <strong>五个一级维度</strong>。其中前四项是学生有能力感知的（适合学生评教），第五项师德师风更适合由同行、家长、学校管理层多主体评价。</p>
+
+<table>
+<thead>
+<tr><th style="width:18%">一级维度</th><th style="width:42%">内涵</th><th style="width:40%">典型二级指标</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><span class="pill p-blue">教学能力</span></td>
+  <td>教师传授知识、启发思维的专业能力，是教学质量的核心</td>
+  <td>讲解清晰易懂；善于启发思维与动手能力；教学节奏合理；注重因材施教</td>
+</tr>
+<tr>
+  <td><span class="pill p-green">课堂管理</span></td>
+  <td>课堂秩序、纪律组织与学习氛围营造</td>
+  <td>课堂纪律良好；组织有序、要求合理；学生参与度高；时间利用充分</td>
+</tr>
+<tr>
+  <td><span class="pill p-amber">师生关系</span></td>
+  <td>教师对学生的情感支持、尊重与关心程度</td>
+  <td>关心尊重学生；耐心解答问题；公平对待每位学生；鼓励与正面反馈</td>
+</tr>
+<tr>
+  <td><span class="pill p-red">教学态度与规范</span></td>
+  <td>教师职业操守的外显行为表现</td>
+  <td>不迟到早退旷课；作业布置合理、批改认真讲评及时；备课充分</td>
+</tr>
+<tr>
+  <td><span class="pill p-blue">师德师风</span></td>
+  <td>教师职业道德与品行（"四有"好老师标准）</td>
+  <td>敬业合作；谦逊自律；德高身正；求真创新；爱护学生</td>
+</tr>
+</tbody>
+</table>
+
+<div class="note">
+<b>关键区分：</b>"学生评教"只应覆盖学生<b>能直接感知</b>的前四个维度。师德师风属于专业判断范畴，低龄学生难以准确评价，建议由同行督导、家长、管理层多主体评定，学生评价不纳入此项。
+</div>
+
+<p>学术研究（Praetorius 等 2016、Fauth 等 2014）进一步指出，教学质量可抽象为三大通用构念：<strong>课堂管理、支持性氛围、认知激活</strong>。其中"课堂管理"在小学生群体中评价信度最高（班级层面 ICC2 = .63–.82），是最稳定的可测维度；"认知激活"对低龄学生而言最难准确判断。这一结论直接支撑了后文"分学龄段做减法"的设计思路。</p>
+
+<!-- ============ 第二部分 ============ -->
+<h2>二、不同学龄段学生的认知特点与评价能力</h2>
+
+<p>皮亚杰认知发展理论与国内发展心理学研究表明，6–15 岁学生跨越了"前运算末期→具体运算→形式运算"三个阶段，其注意力、思维、自我意识、对教师的态度均有质的不同，这决定了他们评价教师的能力与方式必须分层设计。</p>
+
+<div class="grid3">
+  <div class="g">
+    <h4>低学龄段 · 1–3 年级（约 6–9 岁）</h4>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:0;">具体运算早期 / 注意力依赖期</p>
+    <ul style="font-size:13.5px;">
+      <li><b>注意力：</b>以无意注意为主，持续 15–20 分钟，易受外界干扰</li>
+      <li><b>思维：</b>具体形象思维主导，9–10 岁才开始向抽象逻辑过渡</li>
+      <li><b>记忆：</b>形象记忆为主，抽象记忆弱</li>
+      <li><b>对教师：</b>充满崇拜与敬畏，无条件信任服从</li>
+      <li><b>自我评价：</b>依赖家长/教师反馈，独立性弱</li>
+      <li><b>评价能力：</b>难以区分细节，倾向"全好"评价，存在光环效应</li>
+    </ul>
+  </div>
+  <div class="g">
+    <h4>中学龄段 · 4–6 年级（约 9–12 岁）</h4>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:0;">具体→抽象过渡期</p>
+    <ul style="font-size:13.5px;">
+      <li><b>注意力：</b>有意注意发展（五年级左右占主导），持续 25–30 分钟</li>
+      <li><b>思维：</b>9–10 岁是形象→抽象转折点，能理解简单逻辑</li>
+      <li><b>记忆：</b>10 岁左右掌握复述、组织等记忆策略</li>
+      <li><b>对教师：</b>三年级起不再无条件服从，产生选择性、怀疑态度</li>
+      <li><b>自我评价：</b>中高年级出现独立性，社会比较增强</li>
+      <li><b>评价能力：</b>能区分部分维度，但仍需具体引导</li>
+    </ul>
+  </div>
+  <div class="g">
+    <h4>高学龄段 · 7–9 年级（约 12–15 岁）</h4>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:0;">形式运算 / 青春期</p>
+    <ul style="font-size:13.5px;">
+      <li><b>思维：</b>抽象逻辑思维占主导，能进行假设演绎推理</li>
+      <li><b>批判性：</b>求知欲与探索精神强，少保守，喜欢质疑</li>
+      <li><b>自我意识：</b>强烈，能整合多维度形成复杂自我形象</li>
+      <li><b>对教师：</b>独立评判，有明确好恶，师生关系趋于平等</li>
+      <li><b>评价能力：</b>能多维度、较客观地评价，可区分学科差异</li>
+    </ul>
+  </div>
+</div>
+
+<div class="note">
+<b>对评价设计的核心启示：</b>学龄段越低，评价越应<b>聚焦具体可感知的行为</b>（如"老师讲得清楚吗"），维度越少，选项越简单；学龄段越高，越可引入抽象维度（如"是否启发思维"）、增加维度数量与选项粒度。这是"认知负荷匹配"原则。
+</div>
+
+<!-- ============ 第三部分 ============ -->
+<h2>三、分学龄段评价指标设计建议</h2>
+
+<p>基于上述认知特点，结合一线学生评教问卷实践，给出三个学龄段的差异化指标设计。总体原则：<strong>低段做减法（3–4 个维度、3 级选项）、中段做过渡（4–5 个维度、3–4 级）、高段做加法（5–6 个维度、4–5 级）</strong>。</p>
+
+<h3>3.1 低学龄段（1–3 年级）</h3>
+<div class="card">
+<p style="margin-top:0;"><b>设计原则：</b>只问孩子"能直接感受到的事"，语言口语化、具体化，避免抽象概念（不问"教学效果""认知激活"）。建议配合图标/表情辅助。</p>
+<table>
+<tr><th style="width:30%">评价维度</th><th>具体题目示例（儿童化表述）</th></tr>
+<tr><td>老师讲得好不好</td><td>"老师讲课，你能听明白吗？"（很明白 / 有点明白 / 听不懂）</td></tr>
+<tr><td>课堂开不开心</td><td>"上这位老师的课，你觉得开心吗？"（很开心 / 还行 / 不开心）</td></tr>
+<tr><td>老师对你好不好</td><td>"老师对你好不好、有没有耐心？"（很好 / 一般 / 不好）</td></tr>
+<tr><td>课堂乖不乖</td><td>"我们上课时，大家乖不乖、听不听话？"（很乖 / 还行 / 乱糟糟）</td></tr>
+</table>
+<p><b>评价方式：</b>3 级选项 + 表情图标（😊 / 😐 / 😟），<b>不使用数字打分</b>。</p>
+</div>
+
+<h3>3.2 中学龄段（4–6 年级）</h3>
+<div class="card">
+<p style="margin-top:0;"><b>设计原则：</b>引入"作业""启发"等稍抽象但可理解的概念，维度增加，可从 3 级过渡到 4 级。</p>
+<table>
+<tr><th style="width:30%">评价维度</th><th>具体题目示例</th></tr>
+<tr><td>教学讲解</td><td>"老师讲的内容，你容易听懂吗？"</td></tr>
+<tr><td>课堂管理</td><td>"老师上课时，班里秩序好不好？"</td></tr>
+<tr><td>作业与反馈</td><td>"老师布置的作业合理吗？批改认真吗？讲评及时吗？"</td></tr>
+<tr><td>关心与鼓励</td><td>"老师关心你吗？你提问时老师耐心解答吗？"</td></tr>
+<tr><td>启发思考</td><td>"老师会鼓励你们多思考、多动手吗？"</td></tr>
+</table>
+<p><b>评价方式：</b>3–4 级选项（如"很好 / 比较好 / 一般 / 不好"），可选配少量星级（3–4 星）。</p>
+</div>
+
+<h3>3.3 高学龄段（7–9 年级）</h3>
+<div class="card">
+<p style="margin-top:0;"><b>设计原则：</b>学生已具备多维度、批判性评价能力，可覆盖较完整的维度框架，引入抽象维度，选项粒度提升到 4–5 级，可辅以开放式建议。</p>
+<table>
+<tr><th style="width:30%">评价维度</th><th>具体题目示例</th></tr>
+<tr><td>教学能力</td><td>"老师讲解清晰、重点突出，能帮你理解难点吗？"</td></tr>
+<tr><td>课堂管理</td><td>"课堂纪律有序，老师能有效组织教学活动吗？"</td></tr>
+<tr><td>启发思维</td><td>"老师是否善于启发思维、鼓励提问与探究？"</td></tr>
+<tr><td>师生关系</td><td>"老师尊重、公平对待每位同学，耐心解答问题吗？"</td></tr>
+<tr><td>作业反馈</td><td>"作业布置合理，批改认真、讲评及时吗？"</td></tr>
+<tr><td>教学态度</td><td>"老师是否认真负责、不迟到早退、备课充分？"</td></tr>
+</table>
+<p><b>评价方式：</b>4–5 级李克特选项（如"很好 / 较好 / 一般 / 较差 / 很差"），可加入 1 道开放性建议题。</p>
+</div>
+
+<div class="rec">
+<b>设计要点回顾：</b>三个学龄段在"维度数量""抽象程度""选项粒度"三个轴上递进。低段强调<b>可感知、口语化、表情化</b>；高段强调<b>多维度、可批判、有开放反馈</b>。系统应支持按学龄段动态加载不同问卷模板。
+</div>
+
+<!-- ============ 第四部分 ============ -->
+<h2>四、打分制 vs 选项制：对比与选型建议</h2>
+
+<p>这是本系统的核心选型问题。先厘清概念：你说的"选项制（很差/一般/好/很好）"在测量学上本质是<b>李克特式等级量表</b>；"打分制（如 1–10 分、1–100 分）"是<b>数值评分量表</b>。二者并非简单优劣，而要结合<b>学生认知水平</b>与<b>数据用途</b>判断。</p>
+
+<h3>4.1 两种方式的核心差异</h3>
+<table>
+<thead>
+<tr><th style="width:16%">对比项</th><th style="width:42%">数值打分制（1–10 / 1–100）</th><th style="width:42%">等级选项制（很差/一般/好/很好）</th></tr>
+</thead>
+<tbody>
+<tr><td>认知负荷</td><td>高 — 需理解数字的等距含义与量表锚点</td><td>低 — 文字语义直观，符合日常语言</td></tr>
+<tr><td>理解一致性</td><td>差 — 不同学生对"7 分"含义理解差异大</td><td>好 — 文字标签提供明确参照</td></tr>
+<tr><td>区分粒度</td><td>细 — 理论上区分度高</td><td>粗 — 受选项数量限制</td></tr>
+<tr><td>统计适用性</td><td>可做均值、标准差、回归</td><td>需转换为分值后可统计，更适合频次/分布分析</td></tr>
+<tr><td>极端值倾向</td><td>易现居中效应（都打 7–8 分）</td><td>同样有趋中/正向偏移，但更可控</td></tr>
+<tr><td>低龄适用性</td><td><span class="pill p-red">很差</span> 抽象数字超出具体运算阶段能力</td><td><span class="pill p-green">很好</span> 文字+图标匹配具象认知</td></tr>
+</tbody>
+</table>
+
+<h3>4.2 发展心理学视角的关键判断</h3>
+<ul>
+<li><b>6–9 岁（低段）</b>处于具体运算早期，对"等距数字"的理解尚未稳定。要求他们给"7 分还是 8 分"做区分，本质是抽象判断，会产生大量随机误差。<b>数字打分在此阶段信度极低</b>。</li>
+<li><b>9–12 岁（中段）</b>开始过渡，能理解 3–4 个有序等级，但对 10 分制或 100 分制的精细区分仍力不从心。</li>
+<li><b>12–15 岁（高段）</b>进入形式运算阶段，可理解 4–5 级李克特量表，但<b>即便如此，文字标签式李克特量表仍优于纯数字打分</b>——这是教育测量领域的共识。</li>
+</ul>
+
+<div class="note">
+<b>测量学共识：</b>即便是面向成人的成熟量表（如 SAT、课程评教），也几乎都采用<b>带文字标签的李克特等级</b>而非裸数字打分。裸数字打分主要用于需要精细区分的竞赛/评分场景（如体操、考试），其前提是评分者具备专业判断力——这恰恰是学生不具备的。
+</div>
+
+<h3>4.3 选型建议</h3>
+
+<div class="rec">
+<b>结论：以"等级选项制"为主，按学龄段调节选项数量；原则上不使用纯数值打分。</b><br><br>
+<b>低学龄段（1–3）：</b>3 级文字选项 + 表情图标（如 很好😊 / 还行😐 / 不好😟）。<br>
+<b>中学龄段（4–6）：</b>3–4 级文字选项（如 很好 / 比较好 / 一般 / 不好）。<br>
+<b>高学龄段（7–9）：</b>4–5 级李克特选项（如 很好 / 较好 / 一般 / 较差 / 很差），可加可选开放题。
+</div>
+
+<p><b>若系统确需输出"分数"用于横向比较</b>（如教师绩效排名），应在后端将等级选项<b>等距映射为分值</b>（如 很好=4 / 较好=3 / 一般=2 / 较差=1），再聚合为维度均分。这样既保证学生端的低认知负荷，又满足管理端的量化需求——这是业界标准做法。</p>
+
+<table>
+<tr><th style="width:25%">做法</th><th style="width:15%">推荐度</th><th>说明</th></tr>
+<tr><td>纯数字打分（1–10/100）面向所有学龄段</td><td><span class="pill p-red">不推荐</span></td><td>低龄信度极低，高龄也无优势</td></tr>
+<tr><td>低段数字、高段选项</td><td><span class="pill p-amber">不推荐</span></td><td>方向反了，低龄最不该用数字</td></tr>
+<tr><td>全学龄段统一 3 级选项</td><td><span class="pill p-amber">可接受</span></td><td>简单但浪费高段学生的区分能力</td></tr>
+<tr><td>分学龄段递进式选项（3→4→5 级）</td><td><span class="pill p-green">强烈推荐</span></td><td>匹配认知发展，兼顾信度与区分度</td></tr>
+</table>
+
+<!-- ============ 第五部分 ============ -->
+<h2>五、综合结论与系统设计要点</h2>
+
+<div class="card">
+<ol>
+<li><b>维度框架：</b>学生评教聚焦"教学能力、课堂管理、师生关系、教学态度与规范"四个学生可感知维度；师德师风由多主体（同行/家长/管理层）评定，不纳入学生评价。</li>
+<li><b>分层设计：</b>三学龄段在维度数量（3→5→6）、抽象程度、选项粒度（3→4→5 级）上递进，遵循认知负荷匹配原则。</li>
+<li><b>评价方式：</b>统一采用带文字标签的<b>等级选项制</b>，不用纯数值打分；后端可等距映射为分值做统计。低段配表情图标降低门槛。</li>
+<li><b>系统实现：</b>支持按学龄段动态加载问卷模板；题目表述儿童化；高段可加开放题；注意光环效应，低段可设置"反向校验题"识别随意作答。</li>
+<li><b>数据解读：</b>低段数据因光环效应偏差大，宜作为定性参考而非精确定量；高段数据可纳入教师发展性评价。所有学龄段数据均应<b>发展性使用</b>（改进教学），慎用于奖惩。</li>
+</ol>
+</div>
+
+<div class="src">
+<strong>主要参考来源</strong>
+<ul>
+<li>上海师范大学《新时代师德评价指标体系的构建与测量》(2024) — "四有"好老师五指标师德框架</li>
+<li>Fauth 等 / Praetorius 等 — 教学质量三维度框架（课堂管理、支持性氛围、认知激活）</li>
+<li>Tandfonline《Primary school students' ratings of teaching》(2024) — 小学生评教信效度与年龄分层实证</li>
+<li>《6-12岁小学生的心理和行为发展特点》(知乎/发展心理学) — 注意力、思维、自我意识、师生关系阶段性特征</li>
+<li>《中高年级小学生的心理特点与行为特征探究》(汉斯出版社, 2023)</li>
+<li>《初中生心理发展的特点》(发展心理学文献) — 抽象逻辑思维、批判性、自我意识</li>
+<li>《学生评教量表构建的理论与实践》— 量表维度划分与信效度测试</li>
+<li>问卷网/问卷星学生评教模板 — 一线问卷题目实践示例</li>
+<li>李克特量表设计文献（1932 提出，教育测量通用方法）</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>

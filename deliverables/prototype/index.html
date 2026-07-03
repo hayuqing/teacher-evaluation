@@ -1,0 +1,678 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教师评价问卷系统 · 交互原型 v3（桌面优先）</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F8F5F0; --card:#FFFFFF; --text:#1F1E1B; --text2:#5C5A55; --muted:#C8D4BD;
+  --border:#DCE5D4; --accent:#87A878; --accent2:#D89575; --warn:#D4A574; --err:#D08068;
+  --radius-card:20px; --radius-btn:50px; --shadow:0 8px 32px rgba(31,30,27,.08);
+  --shadow-sm:0 4px 12px rgba(31,30,27,.06);
+}
+/* tier theme overrides */
+body.tier-low{--accent:#F2A03D;--bg:#FFF9F0;--border:#F5E0C8;--muted:#E8C9A0;}
+body.tier-mid{--accent:#6B9FD8;--bg:#F0F6FA;--border:#CFE0EC;--muted:#A8C8DE;}
+body.tier-high{--accent:#87A878;--bg:#F8F5F0;--border:#DCE5D4;--muted:#C8D4BD;}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ===== DESKTOP-FIRST LAYOUT ===== */
+.screen{display:none;min-height:100vh;padding:48px 40px}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+.wrap{width:100%;max-width:1100px;margin:0 auto}
+
+/* tier switcher (dev tool) */
+.tier-switch{display:none;position:fixed;top:16px;right:16px;gap:6px;background:var(--card);padding:6px;border-radius:50px;box-shadow:var(--shadow-sm);z-index:200;font-size:12px}
+.tier-switch button{border:none;background:transparent;padding:8px 14px;border-radius:50px;cursor:pointer;font-weight:500;color:var(--text2);font-size:12px}
+.tier-switch button.on{background:var(--accent);color:#fff}
+
+/* header */
+.hdr{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1100px;margin:0 auto 32px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-dot{width:36px;height:36px;background:var(--accent);border-radius:10px}
+.brand-txt{font-size:18px;font-weight:600}
+
+/* cards */
+.card{background:var(--card);border-radius:var(--radius-card);padding:48px 56px;box-shadow:var(--shadow);width:100%}
+
+/* steps */
+.steps{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.step-tag{font-size:14px;font-weight:500;color:var(--accent)}
+.step-dots{display:flex;gap:8px}
+.sd{width:8px;height:8px;border-radius:4px;background:var(--border)}
+.sd.on{width:32px;background:var(--accent)}
+.sd.done{background:var(--accent)}
+
+.h1{font-size:28px;font-weight:600;margin-bottom:28px}
+.h2{font-size:20px;font-weight:600;margin-bottom:18px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:52px;padding:0 32px;border:none;border-radius:var(--radius-btn);font-size:16px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-pri:hover{filter:brightness(.93)}
+.btn-sec{background:var(--bg);color:var(--text2)}
+.btn-sec:hover{filter:brightness(.97)}
+.btn-block{width:100%}
+.btn-back{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;background:var(--card);border:none;border-radius:22px;font-size:14px;color:var(--text2);cursor:pointer;font-family:inherit}
+
+/* progress */
+.prog{margin-bottom:24px}
+.prog-lbl{font-size:14px;font-weight:500;color:var(--accent);margin-bottom:10px}
+.prog-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+
+/* ===== EVAL LAYOUT: sidebar + form ===== */
+.eval-layout{display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start}
+.tnav{background:var(--card);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm);position:sticky;top:32px}
+.tnav-ttl{font-size:14px;font-weight:600;color:var(--text2);padding:6px 12px 14px;border-bottom:1px solid var(--border);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.tnav-ttl .cnt{font-size:12px;color:var(--muted);font-weight:500}
+.tnav-list{display:flex;flex-direction:column;gap:6px;max-height:65vh;overflow-y:auto}
+.tnav-item{display:flex;align-items:center;gap:12px;padding:14px 14px;border-radius:12px;cursor:pointer;transition:.15s;border:2px solid transparent;background:var(--bg)}
+.tnav-item:hover{background:var(--card);border-color:var(--border)}
+.tnav-item.active{background:var(--accent);border-color:var(--accent)}
+.tnav-item.active .tnav-name,.tnav-item.active .tnav-subj{color:#fff}
+.tnav-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;background:var(--border)}
+.tnav-item.done .tnav-dot{background:#fff}
+.tnav-item.done:not(.active){background:#E8F5E9}
+.tnav-item.done:not(.active) .tnav-dot{background:var(--accent)}
+.tnav-item.active .tnav-dot{background:#fff}
+.tnav-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tnav-subj{font-size:12px;color:var(--text2);font-weight:500}
+.tnav-name{font-size:14px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tnav-badge{font-size:11px;padding:3px 8px;border-radius:8px;font-weight:600;flex-shrink:0}
+.tnav-badge.todo{background:var(--border);color:var(--text2)}
+.tnav-badge.done{background:var(--accent);color:#fff}
+.tnav-item.active .tnav-badge{background:rgba(255,255,255,.3);color:#fff}
+
+/* grade grid — desktop: 3 columns side by side */
+.ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ggrid.single{grid-template-columns:1fr;max-width:600px;margin-left:auto;margin-right:auto}
+.ggrp{background:var(--card);border-radius:16px;padding:24px;box-shadow:var(--shadow-sm)}
+.ggrp-lbl{font-size:13px;font-weight:500;margin-bottom:14px}
+.ggrp-lbl.low{color:var(--accent2)}
+.ggrp-lbl.high{color:var(--warn)}
+.ggrp-lbl.junior{color:var(--accent)}
+.gbtn{display:block;width:100%;padding:16px;background:var(--bg);border:2px solid transparent;border-radius:12px;font-size:16px;font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;font-family:inherit;transition:.15s}
+.gbtn:last-child{margin-bottom:0}
+.gbtn:hover{border-color:var(--accent)}
+.gbtn.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* grade page: center title, tabs and card as a single focused column */
+#s-grade .wrap > .h1{margin-left:auto;margin-right:auto;text-align:center;max-width:600px}
+#s-grade .wrap > .gtabs{margin-left:auto;margin-right:auto;justify-content:center;max-width:600px}
+
+/* class grid — desktop: 3 columns */
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cbtn{padding:20px;background:var(--card);border:2px solid transparent;border-radius:14px;font-size:17px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit;transition:.15s}
+.cbtn:hover{border-color:var(--accent)}
+.cbtn.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;background:var(--card);border-radius:12px;font-size:14px;margin-bottom:20px}
+.pill .v{color:var(--accent);font-weight:600}
+
+/* teacher card */
+.tcard{background:var(--card);border-radius:var(--radius-card);padding:40px 48px;box-shadow:var(--shadow);width:100%}
+.tcard.slide-in{animation:slideInUp .9s cubic-bezier(.22,1,.36,1)}
+@keyframes slideInUp{
+  0%{opacity:0;transform:translateY(40px) scale(.97)}
+  40%{opacity:.4}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+.tname.flash{animation:nameFlash 1.2s ease}
+@keyframes nameFlash{
+  0%{color:var(--accent);transform:scale(1)}
+  30%{color:var(--accent);transform:scale(1.08)}
+  100%{color:var(--text);transform:scale(1)}
+}
+.tavatar.pop{animation:avatarPop .9s cubic-bezier(.34,1.56,.64,1)}
+@keyframes avatarPop{
+  0%{opacity:0;transform:scale(0)}
+  60%{opacity:1;transform:scale(1.15)}
+  100%{opacity:.2;transform:scale(1)}
+}
+.thdr{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.tavatar{width:56px;height:56px;border-radius:50%;background:var(--accent);opacity:.2;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px}
+.tname{font-size:20px;font-weight:600}
+.thint{font-size:13px;color:var(--text2)}
+
+/* dimensions */
+.dims{display:flex;flex-direction:column;gap:24px;margin-bottom:24px}
+.dim{display:flex;flex-direction:column;gap:12px}
+.dim-q{font-size:16px;font-weight:500;line-height:1.5}
+.dim-q.rev{color:var(--warn);font-style:italic}
+.dim-q .rev-tag{display:inline-block;font-size:11px;background:var(--warn);color:#fff;padding:3px 8px;border-radius:6px;margin-left:8px;font-style:normal;font-weight:600;vertical-align:middle}
+
+/* likert options — desktop: wider buttons, no wrap */
+.opts{display:flex;gap:10px}
+.opt{flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;background:var(--bg);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:.15s;text-align:center}
+.opt:hover{border-color:var(--accent);background:var(--card)}
+.opt.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.opt-emoji{font-size:30px;line-height:1}
+.opt-txt{font-size:13px;font-weight:500}
+
+/* low tier big emoji buttons */
+body.tier-low .opt{padding:22px 10px}
+body.tier-low .opt-emoji{font-size:44px}
+body.tier-low .opt-txt{font-size:15px}
+body.tier-low .dim-q{font-size:18px}
+
+/* mid tier */
+body.tier-mid .opt-emoji{font-size:26px}
+
+/* comment */
+.cmt{border-top:1px solid var(--border);padding-top:24px;margin-bottom:24px}
+.cmt-lbl{font-size:15px;font-weight:500;margin-bottom:10px}
+.cmt-inp{width:100%;height:80px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;resize:none;color:var(--text)}
+.cmt-inp::placeholder{color:var(--muted)}
+.cmt-cnt{font-size:12px;color:var(--muted);text-align:right;margin-top:6px}
+
+/* actions */
+.acts{display:flex;justify-content:center;align-items:center;gap:16px}
+.acts .btn{flex:0 0 auto;min-width:180px}
+.acts .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* summary */
+.sum-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px}
+.sum-item{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border-radius:12px}
+.sum-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0}
+.sum-ic.ok{background:var(--accent)}
+.sum-nm{font-size:15px}
+.sum-nm.ok{font-weight:500}
+.warn-box{background:var(--bg);border-radius:12px;padding:18px;margin-bottom:24px;color:var(--warn);font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px}
+
+/* success */
+.succ{text-align:center}
+.succ .big{font-size:64px;margin-bottom:20px}
+.succ h2{font-size:28px;font-weight:600;margin-bottom:10px}
+.succ p{font-size:16px;color:var(--text2);margin-bottom:28px}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(31,30,27,.4);align-items:center;justify-content:center;z-index:100;padding:24px}
+.modal-bg.on{display:flex}
+.modal{background:var(--card);border-radius:20px;padding:32px;max-width:460px;width:100%}
+.modal-ttl{font-size:20px;font-weight:600;margin-bottom:10px}
+.modal-txt{font-size:14px;color:var(--text2);margin-bottom:24px}
+.modal-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.modal-opt{display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border:2px solid transparent;border-radius:12px;cursor:pointer;font-size:15px}
+.modal-opt:hover,.modal-opt.sel{border-color:var(--accent)}
+.modal-acts{display:flex;gap:12px}
+.modal-acts .btn{flex:1;height:48px;font-size:15px}
+
+/* notice card — desktop: wider, not too narrow */
+.notice{text-align:center;max-width:600px;margin:0 auto}
+.notice-ic{width:72px;height:72px;background:var(--accent);opacity:.15;border-radius:50%;margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:32px}
+.notice h1{font-size:30px;font-weight:600;margin-bottom:12px}
+.notice .sub{font-size:16px;color:var(--text2);margin-bottom:28px}
+.notice-div{height:1px;background:var(--border);margin-bottom:28px}
+.notice-info{background:var(--bg);border-radius:14px;padding:24px;text-align:left;margin-bottom:28px}
+.notice-info-item{font-size:14px;color:var(--text2);margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
+.notice-info-item:last-child{margin-bottom:0}
+.footer{text-align:center;font-size:12px;color:var(--muted);margin-top:28px;width:100%}
+
+/* grade tabs */
+.gtabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);flex-wrap:wrap}
+.gtab{padding:14px 22px;border:none;background:transparent;font-size:15px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;font-family:inherit;border-radius:10px 10px 0 0}
+.gtab:hover{color:var(--text);background:var(--bg)}
+.gtab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* ===== RESPONSIVE: tablet & small screens ===== */
+@media(max-width:1024px){
+  .screen{padding:32px 24px}
+  .card,.tcard{padding:32px}
+  .eval-layout{grid-template-columns:1fr}
+  .tnav{position:static;max-height:none}
+  .tnav-list{max-height:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .cgrid{grid-template-columns:repeat(2,1fr)}
+  .card{padding:36px 40px}
+  .h1{font-size:24px}
+}
+
+@media(max-width:768px){
+  .screen{padding:20px 16px}
+  .card,.tcard{padding:24px}
+  .ggrid{grid-template-columns:1fr}
+  .ggrid.single{max-width:none}
+  .cgrid{grid-template-columns:1fr}
+  .acts{flex-direction:column}
+  .acts .btn{width:100%}
+  .opts{flex-wrap:wrap}
+  .opt{min-width:70px}
+  .tnav-list{grid-template-columns:repeat(2,1fr)}
+  .sum-list{grid-template-columns:1fr}
+  .card{padding:24px}
+}
+</style>
+</head>
+<body class="tier-high">
+
+<!-- Tier switcher (dev preview tool) -->
+<div class="tier-switch">
+  <button class="on" data-tier="low" onclick="setTier('low')">1-3年级</button>
+  <button data-tier="mid" onclick="setTier('mid')">4-6年级</button>
+  <button data-tier="high" onclick="setTier('high')">7-9年级</button>
+</div>
+
+<!-- ============ SCREEN: Notice ============ -->
+<div class="screen active" id="s-notice">
+  <div class="wrap">
+    <div class="hdr">
+      <div class="brand"><div class="brand-dot"></div><div class="brand-txt">教师评价系统</div></div>
+    </div>
+    <div class="card notice">
+      <div class="notice-ic">🔒</div>
+      <h1>你的评价完全匿名</h1>
+      <p class="sub">老师不会知道是谁的评价，请放心真实作答</p>
+      <div class="notice-div"></div>
+      <div class="notice-info">
+        <div class="notice-info-item"><span>🔒</span><span>你的姓名和学号不会出现在任何评价数据中</span></div>
+        <div class="notice-info-item"><span>📋</span><span>每位老师的评价单独保存，最终确认前可以返回修改</span></div>
+        <div class="notice-info-item"><span>✅</span><span>最终提交后无法修改或追溯，确保隐私安全</span></div>
+      </div>
+      <button class="btn btn-pri btn-block" onclick="go('s-grade');selectGradeTab(S.tier);">我已知晓，开始评价</button>
+    </div>
+    <div class="footer">技术支持 · 数据加密传输 · 《隐私保护协议》</div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: Grade ============ -->
+<div class="screen" id="s-grade">
+  <div class="wrap">
+    <div class="steps"><span class="step-tag">步骤 1/3 · 选择年级</span><div class="step-dots"><div class="sd on"></div><div class="sd"></div><div class="sd"></div></div></div>
+    <h1 class="h1" id="grade-title">请选择你的年级 · 小学低年级（1-3年级）</h1>
+    <div class="gtabs" id="grade-tabs">
+      <button class="gtab on" data-tier="low" onclick="selectGradeTab('low')">小学低年级（1-3年级）</button>
+      <button class="gtab" data-tier="mid" onclick="selectGradeTab('mid')">小学高年级（4-6年级）</button>
+      <button class="gtab" data-tier="high" onclick="selectGradeTab('high')">初中（7-9年级）</button>
+    </div>
+    <div class="ggrid single" id="grade-grid">
+      <div class="ggrp" data-tier="low"><div class="ggrp-lbl low">小学低年级</div>
+        <button class="gbtn" data-g="1" data-n="一年级" data-tier="low">一年级</button>
+        <button class="gbtn" data-g="2" data-n="二年级" data-tier="low">二年级</button>
+        <button class="gbtn" data-g="3" data-n="三年级" data-tier="low">三年级</button>
+      </div>
+      <div class="ggrp" data-tier="mid" style="display:none"><div class="ggrp-lbl high">小学高年级</div>
+        <button class="gbtn" data-g="4" data-n="四年级" data-tier="mid">四年级</button>
+        <button class="gbtn" data-g="5" data-n="五年级" data-tier="mid">五年级</button>
+        <button class="gbtn" data-g="6" data-n="六年级" data-tier="mid">六年级</button>
+      </div>
+      <div class="ggrp" data-tier="high" style="display:none"><div class="ggrp-lbl junior">初中</div>
+        <button class="gbtn" data-g="7" data-n="七年级" data-tier="high">七年级</button>
+        <button class="gbtn" data-g="8" data-n="八年级" data-tier="high">八年级</button>
+        <button class="gbtn" data-g="9" data-n="九年级" data-tier="high">九年级</button>
+      </div>
+    </div>
+    <div style="margin-top:28px"><button class="btn-back" onclick="go('s-notice')">← 返回</button></div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: Class ============ -->
+<div class="screen" id="s-class">
+  <div class="wrap">
+    <div class="steps"><span class="step-tag">步骤 2/3 · 选择班级</span><div class="step-dots"><div class="sd done"></div><div class="sd on"></div><div class="sd"></div></div></div>
+    <div class="pill"><span>已选：</span><span class="v" id="sel-grade">八年级</span></div>
+    <h1 class="h1">请选择你的班级</h1>
+    <div class="cgrid" id="class-grid"></div>
+    <div style="margin-top:28px"><button class="btn-back" onclick="go('s-grade')">← 返回修改年级</button></div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: Evaluation (sidebar + form) ============ -->
+<div class="screen" id="s-eval">
+  <div class="wrap">
+    <div class="eval-layout">
+      <!-- teacher nav sidebar -->
+      <div class="tnav">
+        <div class="tnav-ttl">
+          <span>教师列表</span>
+          <span class="cnt" id="tnav-cnt">0 / 3</span>
+        </div>
+        <div class="tnav-list" id="tnav-list"></div>
+      </div>
+      <!-- main evaluation form -->
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div class="prog">
+          <div class="prog-lbl" id="prog-lbl">已完成 0 / 3 位教师</div>
+          <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        </div>
+        <div class="tcard" id="tcard">
+          <div class="thdr">
+            <div class="tavatar">🧑‍🏫</div>
+            <div><div class="tname" id="t-name">英语 · 张老师</div><div class="thint" id="t-hint">请根据以下维度评价</div></div>
+          </div>
+          <div class="dims" id="dims"></div>
+          <div id="cmt-area" style="display:none">
+            <div class="cmt">
+              <div class="cmt-lbl">📝 你有什么建议？（选填，限50字）</div>
+              <textarea class="cmt-inp" id="cmt-input" placeholder="请输入你的建议..." maxlength="50" oninput="updateCnt(this)"></textarea>
+              <div class="cmt-cnt"><span id="cmt-cnt">0</span>/50</div>
+            </div>
+          </div>
+          <div class="acts" id="eval-actions">
+            <button class="btn btn-pri" id="btn-submit" onclick="submitTeacher()" disabled style="opacity:.4;cursor:not-allowed">完成本位老师评价</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: Confirm ============ -->
+<div class="screen" id="s-confirm">
+  <div class="wrap">
+    <div class="steps"><span class="step-tag">步骤 3/3 · 确认提交</span><div class="step-dots"><div class="sd done"></div><div class="sd done"></div><div class="sd on"></div></div></div>
+    <h1 class="h1">确认你的评价</h1>
+    <div class="card">
+      <div class="sum-list" id="sum-list"></div>
+      <div class="warn-box">⚠️ 最终提交后无法修改，请确认以上信息无误</div>
+      <button class="btn btn-pri btn-block" onclick="finalSubmit()">确认提交，提交后不可修改</button>
+    </div>
+    <div style="margin-top:28px"><button class="btn-back" onclick="go('s-eval')">← 返回修改</button></div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: Success ============ -->
+<div class="screen" id="s-success">
+  <div class="wrap">
+    <div class="card succ">
+      <div class="big">🎉</div>
+      <h2>评价提交成功</h2>
+      <p>感谢你的真实反馈，这将帮助老师更好地教学</p>
+      <div style="margin-top:28px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA: dimension configs per tier =====
+const DIMS = {
+  low: [
+    {q:'老师讲课，你能听明白吗？', opts:[{e:'😊',t:'很明白'},{e:'😐',t:'有点明白'},{e:'😟',t:'听不懂'}]},
+    {q:'上这位老师的课，你觉得开心吗？', opts:[{e:'😊',t:'很开心'},{e:'😐',t:'还行'},{e:'😟',t:'不开心'}]},
+    {q:'老师对你好不好、有没有耐心？', opts:[{e:'😊',t:'很好'},{e:'😐',t:'一般'},{e:'😟',t:'不好'}]},
+    {q:'老师上课时，班里是不是能安静听课？', opts:[{e:'😊',t:'很安静'},{e:'😐',t:'还行'},{e:'😟',t:'有点乱'}]},
+    {q:'有时候老师讲的课会让你觉得有点难，是吗？', rev:true, opts:[{e:'😊',t:'不是'},{e:'😐',t:'有时候'},{e:'😟',t:'是的'}]},
+  ],
+  mid: [
+    {q:'老师讲的内容，你容易听懂吗？', opts:[{e:'',t:'很好'},{e:'',t:'比较好'},{e:'',t:'一般'},{e:'',t:'不好'}]},
+    {q:'老师上课时，班里秩序好不好？', opts:[{e:'',t:'很好'},{e:'',t:'比较好'},{e:'',t:'一般'},{e:'',t:'不好'}]},
+    {q:'老师布置的作业合理吗？批改认真吗？', opts:[{e:'',t:'很好'},{e:'',t:'比较好'},{e:'',t:'一般'},{e:'',t:'不好'}]},
+    {q:'老师关心你吗？你提问时老师耐心解答吗？', opts:[{e:'',t:'很好'},{e:'',t:'比较好'},{e:'',t:'一般'},{e:'',t:'不好'}]},
+    {q:'老师会鼓励你们多思考、多动手吗？', opts:[{e:'',t:'很好'},{e:'',t:'比较好'},{e:'',t:'一般'},{e:'',t:'不好'}]},
+  ],
+  high: [
+    {q:'老师讲解清晰、重点突出，能帮你理解难点吗？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+    {q:'课堂纪律有序，老师能有效组织教学活动吗？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+    {q:'老师是否善于启发思维、鼓励提问与探究？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+    {q:'老师尊重、公平对待每位同学，耐心解答问题吗？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+    {q:'作业布置合理，批改认真、讲评及时吗？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+    {q:'老师是否认真负责、不迟到早退、备课充分？', opts:[{e:'',t:'很好'},{e:'',t:'较好'},{e:'',t:'一般'},{e:'',t:'较差'},{e:'',t:'很差'}]},
+  ],
+};
+const TEACHERS = [
+  {name:'张老师',subject:'英语'},{name:'李老师',subject:'数学'},{name:'王老师',subject:'语文'},
+];
+
+// ===== STATE =====
+let S = { tier:'low', grade:null, gradeName:'', className:'', tIdx:0, teachers:[] };
+
+// ===== NAV =====
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ===== TIER =====
+function setTier(t){
+  S.tier=t;
+  document.body.className='tier-'+t;
+  syncTierSwitcher(t);
+}
+function syncTierSwitcher(t){
+  document.querySelectorAll('.tier-switch button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.tier===t);
+  });
+}
+function selectGradeTab(tier){
+  S.tier=tier;
+  document.body.className='tier-'+tier;
+  syncTierSwitcher(tier);
+  // update tab active states
+  document.querySelectorAll('.gtab').forEach(t=>{
+    t.classList.toggle('on', t.dataset.tier===tier);
+  });
+  // show only the matching grade group
+  document.querySelectorAll('#grade-grid .ggrp').forEach(g=>{
+    g.style.display = g.dataset.tier===tier ? '' : 'none';
+  });
+  // update title
+  const tierNames={low:'小学低年级（1-3年级）',mid:'小学高年级（4-6年级）',high:'初中（7-9年级）'};
+  document.getElementById('grade-title').textContent='请选择你的年级 · '+tierNames[tier];
+}
+
+// ===== GRADE SELECTION =====
+document.querySelectorAll('.gbtn').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.gbtn').forEach(b=>b.classList.remove('sel'));
+    this.classList.add('sel');
+    S.grade=this.dataset.g;
+    S.gradeName=this.dataset.n;
+    // lock tier from the selected grade (drives evaluation dimensions)
+    S.tier=this.dataset.tier;
+    document.body.className='tier-'+S.tier;
+    syncTierSwitcher(S.tier);
+    document.getElementById('sel-grade').textContent=S.gradeName;
+    genClasses();
+    setTimeout(()=>go('s-class'),200);
+  });
+});
+
+// ===== CLASS GENERATION =====
+function genClasses(){
+  const grid=document.getElementById('class-grid');
+  grid.innerHTML='';
+  for(let i=1;i<=6;i++){
+    const btn=document.createElement('button');
+    btn.className='cbtn';
+    btn.textContent=S.gradeName+'（'+i+'）班';
+    btn.onclick=function(){
+      document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('sel'));
+      this.classList.add('sel');
+      S.className=this.textContent;
+      S.tIdx=0;
+      S.teachers=TEACHERS.map(t=>({...t,done:false,answers:{},comment:''}));
+      renderEval();
+      renderTnav();
+      setTimeout(()=>go('s-eval'),200);
+    };
+    grid.appendChild(btn);
+  }
+}
+
+// ===== SAVE CURRENT ANSWERS (切换教师前调用) =====
+function saveCurrentAnswers(){
+  const t=S.teachers[S.tIdx];
+  if(!t) return;
+  const answers={};
+  const dims=document.getElementById('dims').querySelectorAll('.dim');
+  dims.forEach((d,i)=>{
+    const sel=d.querySelector('.opt.sel');
+    if(sel) answers[i]=parseInt(sel.dataset.val);
+  });
+  t.answers=answers;
+  const cmt=document.getElementById('cmt-input');
+  if(cmt) t.comment=cmt.value;
+}
+
+// ===== RENDER TEACHER NAV SIDEBAR =====
+function renderTnav(){
+  const list=document.getElementById('tnav-list');
+  list.innerHTML='';
+  const done=S.teachers.filter(x=>x.done).length;
+  document.getElementById('tnav-cnt').textContent=done+' / '+S.teachers.length;
+  S.teachers.forEach((t,i)=>{
+    const item=document.createElement('div');
+    item.className='tnav-item'+(i===S.tIdx?' active':'')+(t.done?' done':'');
+    item.innerHTML=`<div class="tnav-dot"></div><div class="tnav-info"><div class="tnav-subj">${t.subject}</div><div class="tnav-name">${t.name}</div></div><div class="tnav-badge ${t.done?'done':'todo'}">${t.done?'已完成':'待评价'}</div>`;
+    item.onclick=function(){
+      if(i===S.tIdx) return;
+      saveCurrentAnswers();
+      S.tIdx=i;
+      window.scrollTo({top:0,behavior:'smooth'});
+      const card=document.getElementById('tcard');
+      card.classList.remove('slide-in');
+      const av0=document.querySelector('.tavatar');
+      const nm0=document.getElementById('t-name');
+      if(av0) av0.classList.remove('pop');
+      if(nm0) nm0.classList.remove('flash');
+      setTimeout(()=>{
+        renderEval();
+        void card.offsetWidth;
+        card.classList.add('slide-in');
+        const av=document.querySelector('.tavatar');
+        const nm=document.getElementById('t-name');
+        if(av){ void av.offsetWidth; av.classList.add('pop'); }
+        if(nm){ void nm.offsetWidth; nm.classList.add('flash'); }
+      },400);
+    };
+    list.appendChild(item);
+  });
+}
+
+// ===== RENDER EVALUATION =====
+function renderEval(){
+  const t=S.teachers[S.tIdx];
+  document.getElementById('t-name').textContent=t.subject+' · '+t.name;
+  document.getElementById('t-hint').textContent=S.tier==='low'?'请根据以下问题评价（不显示分数）':S.tier==='mid'?'请根据以下维度评价':'请根据以下维度评价，可选填建议';
+  const done=S.teachers.filter(x=>x.done).length;
+  const total=S.teachers.length;
+  document.getElementById('prog-lbl').textContent='已完成 '+done+' / '+total+' 位教师';
+  document.getElementById('prog-fill').style.width=(done/total*100)+'%';
+  renderTnav();
+  const dimsEl=document.getElementById('dims');
+  dimsEl.innerHTML='';
+  const dims=DIMS[S.tier];
+  dims.forEach((d,i)=>{
+    const dim=document.createElement('div');
+    dim.className='dim';
+    dim.dataset.dim=i;
+    const q=document.createElement('div');
+    q.className='dim-q';
+    q.textContent=d.q;
+    dim.appendChild(q);
+    const opts=document.createElement('div');
+    opts.className='opts';
+    d.opts.forEach((o,j)=>{
+      const opt=document.createElement('div');
+      opt.className='opt';
+      opt.dataset.val=j;
+      if(t.answers && t.answers[i]===j) opt.classList.add('sel');
+      opt.onclick=function(){
+        opts.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+        this.classList.add('sel');
+        saveCurrentAnswers();
+        checkAllAnswered();
+      };
+      if(o.e) opt.innerHTML='<div class="opt-emoji">'+o.e+'</div><div class="opt-txt">'+o.t+'</div>';
+      else opt.innerHTML='<div class="opt-txt" style="font-size:14px;padding:4px 0">'+o.t+'</div>';
+      opts.appendChild(opt);
+    });
+    dim.appendChild(opts);
+    dimsEl.appendChild(dim);
+  });
+  document.getElementById('cmt-area').style.display = S.tier==='high'?'block':'none';
+  const cmtInput=document.getElementById('cmt-input');
+  cmtInput.value=(t.comment||'');
+  document.getElementById('cmt-cnt').textContent=cmtInput.value.length;
+  checkAllAnswered();
+}
+
+// ===== COMMENT COUNTER =====
+function updateCnt(el){ document.getElementById('cmt-cnt').textContent=el.value.length; saveCurrentAnswers(); }
+
+// ===== CHECK IF ALL DIMS ANSWERED =====
+function checkAllAnswered(){
+  const dims=document.getElementById('dims').querySelectorAll('.dim');
+  let allOk=true;
+  dims.forEach(d=>{
+    if(!d.querySelector('.opt.sel')) allOk=false;
+  });
+  const btn=document.getElementById('btn-submit');
+  if(btn){
+    if(allOk){
+      btn.disabled=false;
+      btn.style.opacity='1';
+      btn.style.cursor='pointer';
+    } else {
+      btn.disabled=true;
+      btn.style.opacity='.4';
+      btn.style.cursor='not-allowed';
+    }
+  }
+  return allOk;
+}
+
+// ===== NAV: switch via sidebar only (no prev/next buttons) =====
+function switchWithAnim(){
+  window.scrollTo({top:0,behavior:'smooth'});
+  const card=document.getElementById('tcard');
+  card.classList.remove('slide-in');
+  const avatar=document.querySelector('.tavatar');
+  const nameEl=document.getElementById('t-name');
+  if(avatar) avatar.classList.remove('pop');
+  if(nameEl) nameEl.classList.remove('flash');
+  setTimeout(()=>{
+    renderEval();
+    void card.offsetWidth;
+    card.classList.add('slide-in');
+    const av=document.querySelector('.tavatar');
+    const nm=document.getElementById('t-name');
+    if(av){ void av.offsetWidth; av.classList.add('pop'); }
+    if(nm){ void nm.offsetWidth; nm.classList.add('flash'); }
+  },400);
+}
+
+// ===== SUBMIT TEACHER =====
+function submitTeacher(){
+  if(!checkAllAnswered()) return;
+  saveCurrentAnswers();
+  const t=S.teachers[S.tIdx];
+  t.done=true;
+  renderTnav();
+  const allDone=S.teachers.every(x=>x.done);
+  if(allDone){
+    buildSummary();
+    go('s-confirm');
+  } else {
+    // find next undone teacher
+    let nextIdx=-1;
+    for(let i=0;i<S.teachers.length;i++){
+      if(!S.teachers[i].done){nextIdx=i;break;}
+    }
+    if(nextIdx>=0) S.tIdx=nextIdx;
+    switchWithAnim();
+  }
+}
+
+// ===== SUMMARY =====
+function buildSummary(){
+  const list=document.getElementById('sum-list');
+  list.innerHTML='';
+  S.teachers.forEach(t=>{
+    const item=document.createElement('div');
+    item.className='sum-item';
+    item.innerHTML='<div class="sum-ic ok">✓</div><div class="sum-nm ok">'+t.subject+' · '+t.name+' — 已完成</div>';
+    list.appendChild(item);
+  });
+}
+
+// ===== FINAL SUBMIT =====
+function finalSubmit(){ go('s-success'); }
+</script>
+</body>
+</html>
+
+
