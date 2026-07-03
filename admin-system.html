@@ -2002,6 +2002,263 @@ function getDashboardStatusKey(status){
   return 'stable';
 }
 
+function initDashboardFilters(){
+  renderDashboardGradeOptions();
+  renderDashboardSubjectOptions();
+}
+
+function handleDashboardTierChange(){
+  renderDashboardGradeOptions();
+  renderDashboardSubjectOptions();
+  renderDashboard();
+}
+
+function renderDashboardGradeOptions(){
+  const select = document.getElementById('dashboardGradeFilter');
+  if(!select) return;
+  const tier = document.getElementById('dashboardTierFilter')?.value || '';
+  const current = select.value;
+  const grades = GRADES.filter(grade => !tier || grade.tier === tier);
+  select.innerHTML = '<option value="">全部年级</option>' + grades.map(grade => `<option value="${grade.id}">${grade.name}</option>`).join('');
+  if(grades.some(grade => String(grade.id) === current)) select.value = current;
+}
+
+function renderDashboardSubjectOptions(){
+  const select = document.getElementById('dashboardSubjectFilter');
+  if(!select) return;
+  const current = select.value;
+  const tier = document.getElementById('dashboardTierFilter')?.value || '';
+  const grade = document.getElementById('dashboardGradeFilter')?.value || '';
+  const rows = filterDashboardRows(getDashboardSubmissions().rows, {tier, grade});
+  const subjects = Array.from(new Set(rows.map(row => row.subject).filter(Boolean))).sort((a,b) => a.localeCompare(b, 'zh-Hans-CN'));
+  select.innerHTML = '<option value="">全部学科</option>' + subjects.map(subject => `<option value="${escapeDashboardHtml(subject)}">${escapeDashboardHtml(subject)}</option>`).join('');
+  if(subjects.includes(current)) select.value = current;
+}
+
+function getDashboardFilters(){
+  return {
+    task: document.getElementById('dashboardTaskFilter')?.value || '',
+    tier: document.getElementById('dashboardTierFilter')?.value || '',
+    grade: document.getElementById('dashboardGradeFilter')?.value || '',
+    subject: document.getElementById('dashboardSubjectFilter')?.value || '',
+    search: document.getElementById('dashboardSearch')?.value || ''
+  };
+}
+
+function renderDashboard(){
+  if(!document.getElementById('dashboardKpis')) return;
+  renderDashboardGradeOptions();
+  renderDashboardSubjectOptions();
+  const filters = getDashboardFilters();
+  const model = buildDashboardModel(filters);
+  renderDashboardSource(model);
+  renderDashboardKpis(model.kpis);
+  renderDashboardGradeChart(model.gradeSummaries);
+  renderDashboardGradeCards(model.gradeSummaries);
+  renderDashboardDimensionBars(model.dimensionSummaries);
+  renderDashboardSubjectBars(model.subjectSummaries);
+  renderDashboardScoreDistribution(model.scoreDistribution);
+  renderDashboardAlerts(model.alerts);
+  renderDashboardTeacherTable(model.teacherSummaries);
+}
+
+function renderDashboardSource(model){
+  const label = document.getElementById('dashboardSourceLabel');
+  if(!label) return;
+  label.textContent = model.source === 'real' ? '真实提交数据' : '演示模拟数据';
+  label.style.background = model.source === 'real' ? 'rgba(135,168,120,.14)' : 'rgba(107,159,216,.12)';
+  label.style.color = model.source === 'real' ? '#4F7E3F' : '#35699E';
+}
+
+function renderDashboardKpis(kpis){
+  const el = document.getElementById('dashboardKpis');
+  if(!el) return;
+  const cards = [
+    {icon:'👨‍🏫', color:'green', num:kpis.teacherCount, label:'参与教师', sub:'当前筛选范围'},
+    {icon:'📝', color:'blue', num:kpis.responseCount, label:'有效评价', sub:'学生对教师评价条数'},
+    {icon:'⭐', color:'orange', num:`${kpis.averageScore}`, label:'平均得分', sub:'百分制'},
+    {icon:'✅', color:'purple', num:`${kpis.completionRate}%`, label:'完成率', sub:'按理论评价量估算'},
+    {icon:'⚠️', color:'red', num:kpis.attentionCount, label:'需关注教师', sub:'低分或样本不足'}
+  ];
+  el.innerHTML = cards.map(card => `
+    <div class="stat-card">
+      <div class="stat-icon ${card.color}">${card.icon}</div>
+      <div class="stat-num">${card.num}</div>
+      <div class="stat-label">${card.label}</div>
+      <div class="stat-change">${card.sub}</div>
+    </div>
+  `).join('');
+}
+
+function renderDashboardGradeChart(grades){
+  const el = document.getElementById('dashboardGradeChart');
+  if(!el) return;
+  if(!grades.length){
+    el.innerHTML = renderDashboardEmpty();
+    return;
+  }
+  el.innerHTML = grades.map(grade => {
+    const height = Math.max(8, Math.min(100, grade.averageScore));
+    return `
+      <div class="dashboard-chart-bar" title="${escapeDashboardHtml(grade.gradeName)} ${grade.averageScore}分">
+        <div class="dashboard-chart-score">${grade.averageScore}</div>
+        <div class="dashboard-chart-fill" style="height:${height}%"></div>
+        <div class="dashboard-chart-label">${escapeDashboardHtml(grade.gradeName.replace('年级',''))}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashboardGradeCards(grades){
+  const el = document.getElementById('dashboardGradeCards');
+  if(!el) return;
+  if(!grades.length){
+    el.innerHTML = renderDashboardEmpty();
+    return;
+  }
+  el.innerHTML = grades.map(grade => `
+    <article class="dashboard-grade-card" onclick="filterDashboardByGrade('${escapeDashboardAttr(grade.grade)}')">
+      <div class="dashboard-grade-card-head">
+        <div class="dashboard-grade-name">${escapeDashboardHtml(grade.gradeName)}</div>
+        ${renderDashboardStatus(grade.status, grade.statusKey)}
+      </div>
+      <div class="dashboard-grade-score">${grade.averageScore}</div>
+      <div class="dashboard-grade-meta">
+        <div><strong>${grade.teacherCount}</strong>教师</div>
+        <div><strong>${grade.responseCount}</strong>评价</div>
+        <div><strong>${grade.completionRate}%</strong>完成率</div>
+      </div>
+      <div class="dashboard-grade-insight">优势：${escapeDashboardHtml(grade.strongestDimension)} · 短板：${escapeDashboardHtml(grade.weakestDimension)}</div>
+    </article>
+  `).join('');
+}
+
+function renderDashboardDimensionBars(dimensions){
+  renderDashboardBars('dashboardDimensionBars', dimensions.map(item => ({
+    label:item.name,
+    value:item.averageScore,
+    sub:`${item.responseCount} 条`
+  })), '#87A878');
+}
+
+function renderDashboardSubjectBars(subjects){
+  renderDashboardBars('dashboardSubjectBars', subjects.slice(0,8).map(item => ({
+    label:item.subject,
+    value:item.averageScore,
+    sub:`${item.responseCount} 条`
+  })), '#6B9FD8');
+}
+
+function renderDashboardBars(containerId, rows, color){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!rows.length){
+    el.innerHTML = renderDashboardEmpty();
+    return;
+  }
+  el.innerHTML = rows.map(row => `
+    <div class="dashboard-bar-row" title="${escapeDashboardHtml(row.label)} ${row.value}分">
+      <div class="dashboard-bar-label">${escapeDashboardHtml(row.label)}</div>
+      <div class="dashboard-bar-track"><div class="dashboard-bar-fill" style="width:${Math.max(0, Math.min(100, row.value))}%;background:${color}"></div></div>
+      <div class="dashboard-bar-value">${row.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderDashboardScoreDistribution(distribution){
+  const el = document.getElementById('dashboardScoreDistribution');
+  if(!el) return;
+  if(!distribution.length){
+    el.innerHTML = renderDashboardEmpty();
+    return;
+  }
+  el.innerHTML = distribution.map(item => `
+    <div class="dashboard-dist-item">
+      <div class="dashboard-dist-num">${item.count}</div>
+      <div class="dashboard-dist-label">${escapeDashboardHtml(item.label)}</div>
+    </div>
+  `).join('');
+}
+
+function renderDashboardAlerts(alerts){
+  const el = document.getElementById('dashboardAlerts');
+  if(!el) return;
+  if(!alerts.length){
+    el.innerHTML = renderDashboardEmpty();
+    return;
+  }
+  el.innerHTML = alerts.map(alert => `
+    <div class="dashboard-alert ${alert.type === 'danger' ? 'danger' : alert.type === 'info' ? 'info' : ''}">
+      <div>${alert.type === 'danger' ? '⚠️' : alert.type === 'info' ? 'ℹ️' : '🔎'}</div>
+      <div>
+        <div class="dashboard-alert-title">${escapeDashboardHtml(alert.title)}</div>
+        <div class="dashboard-alert-text">${escapeDashboardHtml(alert.text)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDashboardTeacherTable(teachers){
+  const tbody = document.getElementById('dashboardTeacherBody');
+  if(!tbody) return;
+  if(!teachers.length){
+    tbody.innerHTML = `<tr><td colspan="8">${renderDashboardEmpty()}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = teachers.map(teacher => `
+    <tr>
+      <td>
+        <div style="font-weight:700">${escapeDashboardHtml(teacher.teacherName)}</div>
+        <div style="font-size:12px;color:var(--text2)">${teacher.grades.map(getDashboardGradeName).join('、')}</div>
+      </td>
+      <td>${escapeDashboardHtml(teacher.subject)}</td>
+      <td>${escapeDashboardHtml(formatDashboardTeachingScope(teacher))}</td>
+      <td>${teacher.responseCount}</td>
+      <td><strong>${teacher.averageScore}</strong></td>
+      <td>${escapeDashboardHtml(teacher.strongestDimension)}</td>
+      <td>${escapeDashboardHtml(teacher.weakestDimension)}</td>
+      <td>${renderDashboardStatus(teacher.status, teacher.statusKey)}</td>
+    </tr>
+  `).join('');
+}
+
+function formatDashboardTeachingScope(teacher){
+  const classText = teacher.classes.slice(0,3).join('、');
+  return classText + (teacher.classes.length > 3 ? ` 等${teacher.classes.length}个班` : '');
+}
+
+function renderDashboardStatus(status, key){
+  return `<span class="dashboard-status ${key || getDashboardStatusKey(status)}">${escapeDashboardHtml(status)}</span>`;
+}
+
+function filterDashboardByGrade(grade){
+  const select = document.getElementById('dashboardGradeFilter');
+  if(select) select.value = String(grade);
+  renderDashboard();
+}
+
+function exportDashboardReport(){
+  toast('当前为静态原型，正式报表导出将在数据服务接入后提供');
+}
+
+function renderDashboardEmpty(){
+  return '<div class="dashboard-empty">当前筛选范围暂无评价数据</div>';
+}
+
+function escapeDashboardHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[char]));
+}
+
+function escapeDashboardAttr(value){
+  return escapeDashboardHtml(value).replace(/`/g, '&#96;');
+}
+
 // ============ AUTH ============
 function handleLogin(e){
   e.preventDefault();
@@ -2045,6 +2302,9 @@ function showPage(pageId){
   // Page-specific updates
   if(pageId === 'evaluations'){
     updateEvalStats();
+  }
+  if(pageId === 'dashboard'){
+    renderDashboard();
   }
   
   // Close mobile sidebar
@@ -4040,6 +4300,8 @@ function initApp(){
   updateGradeStats();
   renderRubricLevels('low');
   renderRubricDims('low');
+  initDashboardFilters();
+  renderDashboard();
 }
 
 // Check if already logged in
