@@ -1609,6 +1609,13 @@ const JUNIOR_TEACHING_SCHEDULE = [
 ];
 
 let currentScheduleStage = 'primary';
+const DASHBOARD_STORAGE_KEY = 'teacherEvaluationSubmissions';
+const DASHBOARD_DIMENSIONS = {
+  low:['讲解理解','课堂体验','耐心关爱','课堂秩序','难度感受'],
+  mid:['讲解理解','课堂秩序','作业反馈','关心解答','启发实践'],
+  high:['讲解清晰','课堂管理','启发思维','关爱公平','作业反馈','责任态度']
+};
+
 const EVALUATIONS = [
   {id:1, name:'2026春季期末评教', tiers:'K-9 全学段', start:'2026-06-20', end:'2026-06-27', rate:94.2, status:'active', label:'进行中'},
   {id:2, name:'2026春季期中快评', tiers:'7-9年级', start:'2026-04-15', end:'2026-04-18', rate:100, status:'done', label:'已完成'},
@@ -1621,6 +1628,379 @@ let classTagsList = [];
 let editingTeacherId = null;
 let teacherCurrentPage = 1;
 const TEACHER_PAGE_SIZE = 50;
+
+// ============ DASHBOARD DATA MODEL ============
+function getDashboardSubmissions(){
+  try{
+    const raw = localStorage.getItem(DASHBOARD_STORAGE_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    if(Array.isArray(parsed) && parsed.length){
+      return {source:'real', rows:normalizeDashboardRows(parsed, 'real')};
+    }
+  }catch(e){}
+  return {source:'mock', rows:buildMockDashboardSubmissions()};
+}
+
+function normalizeDashboardRows(rows, source){
+  return rows
+    .filter(row => row && row.teacherName && row.subject)
+    .map((row, index) => {
+      const grade = String(row.grade || getDashboardGradeFromClass(row.className) || '');
+      const tier = row.tier || getDashboardTierByGrade(grade);
+      const className = row.className ? normalizeClassName(row.className, grade) : '';
+      const answers = {};
+      Object.keys(row.answers || {}).forEach(key => {
+        const value = Number(row.answers[key]);
+        if(Number.isFinite(value)) answers[String(key)] = value;
+      });
+      return {
+        id: row.id || `${source || 'row'}-${index}`,
+        submittedAt: row.submittedAt || '',
+        source: source || row.source || 'real',
+        tier,
+        grade,
+        gradeName: row.gradeName || getDashboardGradeName(grade),
+        className,
+        teacherName: String(row.teacherName).trim(),
+        subject: String(row.subject).trim(),
+        answers,
+        comment: row.comment || '',
+        targetCount: Number(row.targetCount) || 1
+      };
+    });
+}
+
+function buildMockDashboardSubmissions(){
+  const rows = [];
+  const addAssignments = (scheduleRows, subjects, stage) => {
+    scheduleRows.forEach(row => {
+      const grade = stage === 'junior' ? String(row.grade) : getDashboardGradeFromClass(row.classNo);
+      const tier = getDashboardTierByGrade(grade);
+      const className = normalizeClassName(row.classNo, grade);
+      const assignments = [];
+      if(row.head) assignments.push({teacherName:row.head, subject:'班主任'});
+      if(row.vice) assignments.push({teacherName:row.vice, subject:'副班'});
+      subjects.forEach(subject => {
+        const teacherName = row[subject.key];
+        if(teacherName) assignments.push({teacherName, subject:subject.label});
+      });
+      const seen = new Set();
+      assignments.forEach(assignment => {
+        const key = assignment.teacherName + '|' + assignment.subject;
+        if(seen.has(key)) return;
+        seen.add(key);
+        const seed = getDashboardSeed(assignment.teacherName + assignment.subject + className + grade);
+        const responseCount = 10 + (seed % 9);
+        const targetCount = Math.max(responseCount, Math.min(Number(row.studentCount) || responseCount, 18));
+        for(let i=0;i<responseCount;i++){
+          rows.push({
+            id:`mock-${stage}-${grade}-${className}-${assignment.teacherName}-${assignment.subject}-${i}`,
+            submittedAt:`2026-07-${String(1 + (i % 3)).padStart(2,'0')}T${String(8 + (i % 8)).padStart(2,'0')}:20:00+08:00`,
+            source:'mock',
+            tier,
+            grade,
+            gradeName:getDashboardGradeName(grade),
+            className,
+            teacherName:assignment.teacherName,
+            subject:assignment.subject,
+            answers:buildMockDashboardAnswers(tier, seed, i),
+            comment:'',
+            targetCount
+          });
+        }
+      });
+    });
+  };
+  addAssignments(TEACHING_SCHEDULE, SCHEDULE_SUBJECTS, 'primary');
+  addAssignments(JUNIOR_TEACHING_SCHEDULE, JUNIOR_SCHEDULE_SUBJECTS, 'junior');
+  return normalizeDashboardRows(rows, 'mock');
+}
+
+function buildMockDashboardAnswers(tier, seed, index){
+  const optionCount = getDashboardOptionCount(tier);
+  const dimensionCount = (DASHBOARD_DIMENSIONS[tier] || DASHBOARD_DIMENSIONS.high).length;
+  const answers = {};
+  for(let i=0;i<dimensionCount;i++){
+    const marker = (seed + index * 3 + i * 5) % 14;
+    let value = marker <= 6 ? 0 : marker <= 10 ? 1 : 2;
+    if(seed % 17 === 0 && i % 2 === 0) value += 1;
+    answers[String(i)] = Math.min(optionCount - 1, value);
+  }
+  return answers;
+}
+
+function getDashboardSeed(text){
+  return String(text || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+}
+
+function getDashboardGradeFromClass(className){
+  const text = String(className || '');
+  const match = text.match(/[1-9]/);
+  return match ? match[0] : '';
+}
+
+function getDashboardTierByGrade(grade){
+  const value = Number(grade);
+  if(value >= 1 && value <= 3) return 'low';
+  if(value >= 4 && value <= 6) return 'mid';
+  return 'high';
+}
+
+function getDashboardGradeName(grade){
+  const found = GRADES.find(g => String(g.id) === String(grade));
+  return found ? found.name : (grade ? `${grade}年级` : '未分年级');
+}
+
+function getDashboardOptionCount(tier){
+  return tier === 'low' ? 3 : tier === 'mid' ? 4 : 5;
+}
+
+function scoreDashboardAnswer(answerIndex, optionCount){
+  if(optionCount <= 1) return 0;
+  const max = optionCount - 1;
+  return 100 - (Number(answerIndex) / max) * 50;
+}
+
+function getDashboardSubmissionScore(row){
+  const dimensionCount = (DASHBOARD_DIMENSIONS[row.tier] || DASHBOARD_DIMENSIONS.high).length;
+  const optionCount = getDashboardOptionCount(row.tier);
+  const scores = [];
+  for(let i=0;i<dimensionCount;i++){
+    if(row.answers && Object.prototype.hasOwnProperty.call(row.answers, String(i))){
+      scores.push(scoreDashboardAnswer(row.answers[String(i)], optionCount));
+    }
+  }
+  return scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : 0;
+}
+
+function getDashboardDimensionScores(row){
+  const dimensions = DASHBOARD_DIMENSIONS[row.tier] || DASHBOARD_DIMENSIONS.high;
+  const optionCount = getDashboardOptionCount(row.tier);
+  return dimensions.map((name, index) => ({
+    name,
+    score: row.answers && Object.prototype.hasOwnProperty.call(row.answers, String(index))
+      ? scoreDashboardAnswer(row.answers[String(index)], optionCount)
+      : null
+  }));
+}
+
+function buildDashboardModel(filters){
+  const dataset = getDashboardSubmissions();
+  const filteredRows = filterDashboardRows(dataset.rows, filters || {});
+  const teacherSummaries = buildDashboardTeacherSummaries(filteredRows);
+  const gradeSummaries = buildDashboardGradeSummaries(filteredRows);
+  const dimensionSummaries = buildDashboardDimensionSummaries(filteredRows);
+  const subjectSummaries = buildDashboardSubjectSummaries(filteredRows);
+  const scoreDistribution = buildDashboardScoreDistribution(teacherSummaries);
+  const alerts = buildDashboardAlerts(teacherSummaries, gradeSummaries);
+  return {
+    source: dataset.source,
+    rows: filteredRows,
+    kpis: buildDashboardKpis(filteredRows, teacherSummaries),
+    gradeSummaries,
+    dimensionSummaries,
+    subjectSummaries,
+    scoreDistribution,
+    alerts,
+    teacherSummaries
+  };
+}
+
+function filterDashboardRows(rows, filters){
+  const keyword = String(filters.search || '').trim().toLowerCase();
+  return rows.filter(row => {
+    if(filters.tier && row.tier !== filters.tier) return false;
+    if(filters.grade && String(row.grade) !== String(filters.grade)) return false;
+    if(filters.subject && row.subject !== filters.subject) return false;
+    if(keyword){
+      const haystack = [row.teacherName, row.subject, row.gradeName, row.className].join(' ').toLowerCase();
+      if(!haystack.includes(keyword)) return false;
+    }
+    return true;
+  });
+}
+
+function buildDashboardKpis(rows, teacherSummaries){
+  const scores = rows.map(getDashboardSubmissionScore);
+  const assignmentTargets = new Map();
+  rows.forEach(row => {
+    const key = [row.teacherName, row.subject, row.grade, row.className].join('|');
+    if(!assignmentTargets.has(key)) assignmentTargets.set(key, Number(row.targetCount) || 1);
+  });
+  const expected = Array.from(assignmentTargets.values()).reduce((sum, value) => sum + value, 0);
+  const average = scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : 0;
+  return {
+    teacherCount: teacherSummaries.length,
+    responseCount: rows.length,
+    averageScore: roundDashboardNumber(average),
+    completionRate: expected ? Math.min(100, roundDashboardNumber(rows.length / expected * 100)) : 0,
+    attentionCount: teacherSummaries.filter(item => item.statusKey === 'danger' || item.statusKey === 'warning').length
+  };
+}
+
+function buildDashboardTeacherSummaries(rows){
+  const map = new Map();
+  rows.forEach(row => {
+    const key = row.teacherName + '|' + row.subject;
+    if(!map.has(key)){
+      map.set(key, {
+        teacherName: row.teacherName,
+        subject: row.subject,
+        tiers: new Set(),
+        grades: new Set(),
+        classes: new Set(),
+        scores: [],
+        dimensionScores: new Map()
+      });
+    }
+    const item = map.get(key);
+    item.tiers.add(row.tier);
+    item.grades.add(row.grade);
+    item.classes.add(row.className);
+    item.scores.push(getDashboardSubmissionScore(row));
+    getDashboardDimensionScores(row).forEach(dim => {
+      if(dim.score === null) return;
+      if(!item.dimensionScores.has(dim.name)) item.dimensionScores.set(dim.name, []);
+      item.dimensionScores.get(dim.name).push(dim.score);
+    });
+  });
+  return Array.from(map.values()).map(item => {
+    const average = averageDashboardValues(item.scores);
+    const dims = Array.from(item.dimensionScores.entries()).map(([name, scores]) => ({name, score:averageDashboardValues(scores)}));
+    dims.sort((a,b) => b.score - a.score);
+    const status = getDashboardStatus(average, item.scores.length);
+    return {
+      teacherName: item.teacherName,
+      subject: item.subject,
+      tiers: Array.from(item.tiers),
+      grades: Array.from(item.grades).sort((a,b) => Number(a) - Number(b)),
+      classes: Array.from(item.classes).filter(Boolean).sort(),
+      responseCount: item.scores.length,
+      averageScore: roundDashboardNumber(average),
+      strongestDimension: dims[0]?.name || '-',
+      weakestDimension: dims[dims.length - 1]?.name || '-',
+      status,
+      statusKey: getDashboardStatusKey(status)
+    };
+  }).sort((a,b) => b.averageScore - a.averageScore);
+}
+
+function buildDashboardGradeSummaries(rows){
+  const map = new Map();
+  rows.forEach(row => {
+    if(!map.has(row.grade)){
+      map.set(row.grade, {grade:row.grade, gradeName:row.gradeName, tier:row.tier, teacherKeys:new Set(), studentKeys:new Set(), scores:[], dimensions:new Map(), targets:new Map()});
+    }
+    const item = map.get(row.grade);
+    item.teacherKeys.add(row.teacherName + '|' + row.subject);
+    item.studentKeys.add(row.className + '|' + row.submittedAt + '|' + row.id);
+    item.scores.push(getDashboardSubmissionScore(row));
+    const targetKey = [row.teacherName, row.subject, row.className].join('|');
+    if(!item.targets.has(targetKey)) item.targets.set(targetKey, Number(row.targetCount) || 1);
+    getDashboardDimensionScores(row).forEach(dim => {
+      if(dim.score === null) return;
+      if(!item.dimensions.has(dim.name)) item.dimensions.set(dim.name, []);
+      item.dimensions.get(dim.name).push(dim.score);
+    });
+  });
+  return Array.from(map.values()).map(item => {
+    const dims = Array.from(item.dimensions.entries()).map(([name, scores]) => ({name, score:averageDashboardValues(scores)})).sort((a,b) => b.score - a.score);
+    const expected = Array.from(item.targets.values()).reduce((sum, value) => sum + value, 0);
+    const average = averageDashboardValues(item.scores);
+    const status = getDashboardStatus(average, item.scores.length);
+    return {
+      grade:item.grade,
+      gradeName:item.gradeName,
+      tier:item.tier,
+      averageScore:roundDashboardNumber(average),
+      responseCount:item.scores.length,
+      studentCount:item.studentKeys.size,
+      teacherCount:item.teacherKeys.size,
+      completionRate:expected ? Math.min(100, roundDashboardNumber(item.scores.length / expected * 100)) : 0,
+      strongestDimension:dims[0]?.name || '-',
+      weakestDimension:dims[dims.length - 1]?.name || '-',
+      status,
+      statusKey:getDashboardStatusKey(status)
+    };
+  }).sort((a,b) => Number(a.grade) - Number(b.grade));
+}
+
+function buildDashboardDimensionSummaries(rows){
+  const map = new Map();
+  rows.forEach(row => {
+    getDashboardDimensionScores(row).forEach(dim => {
+      if(dim.score === null) return;
+      if(!map.has(dim.name)) map.set(dim.name, []);
+      map.get(dim.name).push(dim.score);
+    });
+  });
+  return Array.from(map.entries()).map(([name, scores]) => ({
+    name,
+    averageScore:roundDashboardNumber(averageDashboardValues(scores)),
+    responseCount:scores.length
+  })).sort((a,b) => b.averageScore - a.averageScore);
+}
+
+function buildDashboardSubjectSummaries(rows){
+  const map = new Map();
+  rows.forEach(row => {
+    if(!map.has(row.subject)) map.set(row.subject, []);
+    map.get(row.subject).push(getDashboardSubmissionScore(row));
+  });
+  return Array.from(map.entries()).map(([subject, scores]) => ({
+    subject,
+    averageScore:roundDashboardNumber(averageDashboardValues(scores)),
+    responseCount:scores.length
+  })).sort((a,b) => b.averageScore - a.averageScore);
+}
+
+function buildDashboardScoreDistribution(teacherSummaries){
+  return [
+    {label:'90分以上', range:'excellent', count:teacherSummaries.filter(t => t.averageScore >= 90).length},
+    {label:'80-89分', range:'stable', count:teacherSummaries.filter(t => t.averageScore >= 80 && t.averageScore < 90).length},
+    {label:'70-79分', range:'warning', count:teacherSummaries.filter(t => t.averageScore >= 70 && t.averageScore < 80).length},
+    {label:'70分以下', range:'danger', count:teacherSummaries.filter(t => t.averageScore < 70).length}
+  ];
+}
+
+function buildDashboardAlerts(teacherSummaries, gradeSummaries){
+  const alerts = [];
+  teacherSummaries.filter(t => t.statusKey === 'danger').slice(0,3).forEach(t => {
+    alerts.push({type:'danger', title:`${t.teacherName} 需要关注`, text:`${t.subject} 平均分 ${t.averageScore}，短板维度为 ${t.weakestDimension}。`});
+  });
+  teacherSummaries.filter(t => t.statusKey === 'warning').slice(0,3).forEach(t => {
+    alerts.push({type:'warning', title:`${t.teacherName} 样本不足`, text:`当前仅 ${t.responseCount} 条评价，建议继续收集后再判断表现。`});
+  });
+  gradeSummaries.filter(g => g.completionRate < 70).slice(0,2).forEach(g => {
+    alerts.push({type:'info', title:`${g.gradeName} 完成率偏低`, text:`当前完成率 ${g.completionRate}%，可能影响年级整体判断。`});
+  });
+  if(!alerts.length){
+    alerts.push({type:'info', title:'暂无明显风险', text:'当前筛选范围内教师评价整体稳定，未发现低分或样本不足信号。'});
+  }
+  return alerts;
+}
+
+function averageDashboardValues(values){
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function roundDashboardNumber(value){
+  return Math.round((Number(value) || 0) * 10) / 10;
+}
+
+function getDashboardStatus(score, count){
+  if(count < 8) return '样本不足';
+  if(score < 75) return '需关注';
+  if(score >= 90) return '优秀';
+  return '稳定';
+}
+
+function getDashboardStatusKey(status){
+  if(status === '优秀') return 'excellent';
+  if(status === '需关注') return 'danger';
+  if(status === '样本不足') return 'warning';
+  return 'stable';
+}
 
 // ============ AUTH ============
 function handleLogin(e){

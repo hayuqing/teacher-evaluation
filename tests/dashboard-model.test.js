@@ -72,5 +72,6 @@ assert.equal(summary[0].responseCount, 8);
 assert.equal(summary[0].status, '优秀');
 assert.deepEqual(summary[0].grades, ['8']);
 assert.equal(summary[0].classes.length, 4);
+assert.equal(buildTeacherSummary(submissions.slice(0, 7))[0].status, '样本不足');
 
 console.log('dashboard model tests passed');
